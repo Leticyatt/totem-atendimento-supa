@@ -42,6 +42,10 @@ function criarApp() {
   // Área do operador: login (senha com hash bcrypt) e painel com placa mascarada.
   app.use('/api/operador', rotasOperador);
 
+  app.get('/seguranca', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'assets', 'seguranca.html'));
+  });
+
   app.get('/api/status', (req, res) => {
     res.json({ sucesso: true, status: 'online', hora: new Date().toISOString() });
   });

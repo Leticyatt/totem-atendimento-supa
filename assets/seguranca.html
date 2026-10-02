@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EstaciTotem - Segurança do armazenamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#175CD3;--primary-hover:#0E3D8C;--primary-light:#EFF4FF;--bg:#F3F6FB;--surface:#fff;--border:#D1DCF0;--text:#0F1B35;--muted:#5A6A8A;--success:#12B76A;--success-light:#ECFDF5;--error:#F04438;--error-light:#FEF3F2}
+html,body{min-height:100%;font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}button{cursor:pointer;border:none}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:var(--surface);border-bottom:1.5px solid var(--border);box-shadow:0 2px 16px rgba(23,92,211,.06)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo i{width:44px;height:44px;border-radius:12px;background:var(--primary);display:grid;place-items:center;color:#fff;font:900 22px Manrope;font-style:normal;box-shadow:0 4px 14px rgba(23,92,211,.32)}
+.logo b{font-size:24px;font-weight:900;letter-spacing:-.5px}.logo b span{color:var(--primary)}
+.logo small{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.who{display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px;color:var(--muted)}
+main{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+.btn{background:var(--primary);color:#fff;font-weight:800;font-size:14px;padding:11px 20px;border-radius:10px;transition:.15s}
+.btn:hover{background:var(--primary-hover)}.btn:disabled{opacity:.6;cursor:wait}
+.btn.ghost{background:var(--primary-light);color:var(--primary)}.btn.ghost:hover{background:#dbe7ff}
+.btn.danger{background:var(--error-light);color:var(--error)}.btn.danger:hover{background:#fde4e1}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:24px;box-shadow:0 2px 16px rgba(23,92,211,.05)}
+#login{max-width:400px;margin:70px auto}
+#login h1{font-size:24px;font-weight:900;margin-bottom:4px}
+#login p{color:var(--muted);font-size:14px;margin-bottom:20px}
+label{display:block;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px}
+input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:var(--bg)}
+input:focus{outline:none;border-color:var(--primary);background:#fff}
+.msg{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;background:var(--error-light);color:var(--error)}
+#login .btn{width:100%;margin-top:18px;padding:14px}
+.intro{margin-bottom:22px}.intro h1{font-size:26px;font-weight:900;letter-spacing:-.4px}.intro p{color:var(--muted);font-size:14px;margin-top:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}header{padding:14px 16px}}
+.card h2{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800}
+.num{width:28px;height:28px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:900;flex:none}
+.card .desc{font-size:13px;color:var(--muted);margin:8px 0 14px;line-height:1.5}
+.out{margin-top:14px;font-size:13px;line-height:1.55}
+.out:empty{display:none}
+.tag{display:inline-block;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800}
+.ok{background:var(--success-light);color:#067647}.no{background:var(--error-light);color:var(--error)}
+code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.hash{background:var(--primary-light);border-radius:10px;padding:12px;word-break:break-all;line-height:1.8}
+.hash .a{color:#7A5AF8;font-weight:800}.hash .b{color:var(--primary);font-weight:800}.hash .c{color:#067647;font-weight:800}.hash .d{color:var(--muted)}
+.leg{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin-top:6px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:6px 8px}
+td{padding:8px;border-top:1px solid var(--border);font-size:13px}
+.raw{color:var(--error);font-weight:700;text-decoration:line-through;text-decoration-color:rgba(240,68,56,.4)}
+.masked{color:#067647;font-weight:800}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.kv span:first-child{color:var(--muted)}
+.res{margin-top:8px;padding:10px 12px;border-radius:10px;font-size:12.5px;line-height:1.5}
+.res.n{background:var(--error-light);color:#912018}.res.y{background:var(--success-light);color:#067647}
+.res b{display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--muted);margin-top:10px;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><i>P</i><div><b>Estaci<span>Totem</span></b><small>SEGURANÇA DO ARMAZENAMENTO</small></div></div>
+  <div class="who" id="who" hidden><span id="whoName"></span><button class="btn ghost" id="sair">Sair</button></div>
+</header>
+
+<main>
+  <section id="login" class="card">
+    <h1>Área do operador</h1>
+    <p>Entre para ver os recursos de segurança da camada de dados.</p>
+    <label for="u">USUÁRIO</label><input id="u" autocomplete="username" value="admin" />
+    <label for="s">SENHA</label><input id="s" type="password" autocomplete="current-password" />
+    <div class="msg" id="loginMsg" hidden></div>
+    <button class="btn" id="entrar">Entrar</button>
+  </section>
+
+  <section id="painel" hidden>
+    <div class="intro"><h1>Recursos de segurança no armazenamento</h1>
+      <p>Cada cartão consulta o sistema em execução (back-end no Render e banco no Supabase) e mostra o resultado real.</p></div>
+    <div class="grid">
+      <div class="card"><h2><span class="num">1</span>Criptografia em repouso</h2>
+        <p class="desc">Os discos do banco são cifrados pelo provedor. A conexão do back-end até o banco também vai cifrada (TLS).</p>
+        <button class="btn" data-r="1">Verificar conexão</button><div class="out" id="o1"></div></div>
+
+      <div class="card"><h2><span class="num">2</span>Hashing de senhas (bcrypt + salt)</h2>
+        <p class="desc">O banco nunca guarda a senha. Este é o valor que está na coluna <code>senha_hash</code> do operador logado.</p>
+        <button class="btn" data-r="2">Ver o que está no banco</button><div class="out" id="o2"></div></div>
+
+      <div class="card"><h2><span class="num">3</span>Princípio do menor privilégio</h2>
+        <p class="desc">O back-end conecta com um usuário restrito, não com o administrador. Teste o que o banco deixa ele fazer:</p>
+        <button class="btn ghost" data-r="3">Ver permissões</button>
+        <div class="out" id="o3"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn danger" data-t="drop">DROP TABLE</button>
+          <button class="btn danger" data-t="delete">DELETE</button>
+          <button class="btn danger" data-t="tarifa">Alterar tarifa</button>
+          <button class="btn danger" data-t="operador">Criar operador</button>
+        </div><div id="o3t"></div></div>
+
+      <div class="card"><h2><span class="num">4</span>Mascaramento de dados</h2>
+        <p class="desc">Quem não precisa ver o dado completo vê só os 4 últimos caracteres. Compare o dado guardado com o que o painel e os logs exibem.</p>
+        <button class="btn" data-r="4">Comparar placas</button><div class="out" id="o4"></div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+let token = null;
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api/operador' + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+  });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && token) { sair(); }
+  if (!r.ok) throw new Error(j.erro || j.mensagem || ('Erro ' + r.status));
+  return j;
+}
+
+function sair() {
+  token = null; $('painel').hidden = true; $('who').hidden = true; $('login').hidden = false; $('s').value = '';
+  ['o1','o2','o3','o3t','o4'].forEach((i) => { $(i).innerHTML = ''; });
+}
+
+async function entrar() {
+  const btn = $('entrar'); $('loginMsg').hidden = true; btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const j = await api('/login', { method: 'POST', body: JSON.stringify({ usuario: $('u').value.trim(), senha: $('s').value }) });
+    token = j.token; $('whoName').textContent = 'Operador: ' + $('u').value.trim();
+    $('login').hidden = true; $('painel').hidden = false; $('who').hidden = false;
+  } catch (e) {
+    $('loginMsg').textContent = e.message; $('loginMsg').hidden = false;
+  } finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+
+const render = {
+  1: (d) => `<span class="tag ${d.cifrada ? 'ok' : 'no'}">${d.cifrada ? 'Conexão cifrada (TLS)' : 'Conexão SEM cifra'}</span>
+    <div style="margin-top:10px">
+    <div class="kv"><span>Servidor</span><span class="mono">${esc(d.host)}</span></div>
+    <div class="kv"><span>Protocolo</span><span class="mono">${esc(d.protocolo || '-')}</span></div>
+    <div class="kv"><span>Cifra</span><span class="mono">${esc(d.cifra || '-')}</span></div></div>
+    <p class="note">Discos em repouso: a cifra (AES-256) é feita pelo Supabase, então não dá para ser medida daqui. Isso protege contra cópia dos arquivos, não contra quem tem acesso lógico ao banco.</p>`,
+  2: (d) => {
+    const p = d.partes;
+    const hash = p
+      ? `<span class="d">$</span><span class="a">${p.versao}</span><span class="d">$</span><span class="b">${String(p.custo).padStart(2,'0')}</span><span class="d">$</span><span class="c">${esc(p.salt)}</span>${esc(p.hash)}`
+      : esc(d.senhaHash);
+    return `<div class="hash mono">${hash}</div>
+    <p class="leg"><b class="a">versão</b> do algoritmo · <b class="b">custo</b> (2<sup>${p ? p.custo : '?'}</sup> rodadas, lento de propósito) · <b class="c">salt</b> aleatório (22 caracteres) · resto: o hash da senha.<br>Não existe caminho de volta do hash para a senha. No login, o bcrypt refaz o cálculo com o mesmo salt e compara.</p>`;
+  },
+  3: (d) => `<span class="tag ${d.administrador ? 'no' : 'ok'}">${d.administrador ? 'Conectado como ADMINISTRADOR' : 'Usuário restrito'}</span>
+    <div style="margin-top:10px"><div class="kv"><span>Usuário do banco</span><span class="mono">${esc(d.usuario)}</span></div>
+    ${Object.entries(d.permissoes).map(([t, p]) => `<div class="kv"><span class="mono">${esc(t)}</span><span class="mono">${esc(p.join(', '))}</span></div>`).join('')}</div>`,
+  4: (d) => d.veiculos.length
+    ? `<table><tr><th>TICKET</th><th>GUARDADO NO BANCO</th><th>EXIBIDO NO PAINEL/LOGS</th></tr>${d.veiculos.map((v) => `<tr><td class="mono">${esc(v.ticket)}</td><td class="raw mono">${esc(v.original)}</td><td class="masked mono">${esc(v.mascarada)}</td></tr>`).join('')}</table>`
+    : '<p class="note">Nenhum veículo no pátio. Gere um ticket no totem e clique de novo.</p>',
+};
+
+async function carregar(n, btn) {
+  const out = $('o' + n); btn.disabled = true;
+  try { out.innerHTML = render[n](await api('/seguranca/recurso' + n)); }
+  catch (e) { out.innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
+  finally { btn.disabled = false; }
+}
+
+async function tentar(acao, btn) {
+  btn.disabled = true;
+  try {
+    const d = await api('/seguranca/recurso3/tentar', { method: 'POST', body: JSON.stringify({ acao }) });
+    $('o3t').innerHTML = `<div class="res ${d.permitido ? 'y' : 'n'}"><b>${d.permitido ? 'Permitido' : 'Recusado pelo banco'} · ${esc(d.comando)}</b><span class="mono">${esc(d.mensagem)}</span></div>
+      <p class="note">Executado como <code>${esc(d.usuario)}</code>, dentro de uma transação que sempre é desfeita.</p>`;
+  } catch (e) { $('o3t').innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
+  finally { btn.disabled = false; }
+}
+
+$('entrar').onclick = entrar; $('sair').onclick = sair;
+$('s').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
+document.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => carregar(b.dataset.r, b));
+document.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => tentar(b.dataset.t, b));
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ const { stmts } = require('../db');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { autenticar, exigirOperador } = require('../seguranca/autenticacao');
 const { mascararPlaca } = require('../seguranca/mascaramento');
+const demoSeguranca = require('./seguranca-demo');
 
 const router = express.Router();
 
@@ -35,5 +36,10 @@ router.get('/painel', exigirOperador, asyncHandler(async (req, res) => {
   }));
   return res.status(200).json({ sucesso: true, operador: req.operador, veiculos });
 }));
+
+// Demonstração dos 4 recursos (tela /seguranca). Desligue com DEMO_SEGURANCA=false.
+if (process.env.DEMO_SEGURANCA !== 'false') {
+  router.use('/seguranca', exigirOperador, demoSeguranca);
+}
 
 module.exports = router;

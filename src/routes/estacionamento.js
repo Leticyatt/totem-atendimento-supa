@@ -32,6 +32,7 @@ const { ErroDeValidacao } = require('../errors');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { criarRateLimiter } = require('../middleware/rateLimiter');
 const config = require('../../config/config');
+const { mascararPlaca } = require('../seguranca/mascaramento');
 
 const router = express.Router();
 
@@ -161,7 +162,11 @@ router.get('/tarifas', asyncHandler(async (req, res) => {
 // GET /api/painel -> lista de veículos atualmente no pátio (uso interno /
 // operador, útil para demonstrar o sistema na apresentação)
 router.get('/painel', asyncHandler(async (req, res) => {
-  const veiculos = await stmts.listarVeiculosDentro.all();
+  // Recurso 4: esta rota é pública, então a placa sai sempre mascarada.
+  const veiculos = (await stmts.listarVeiculosDentro.all()).map((v) => ({
+    ...v,
+    placa: mascararPlaca(v.placa),
+  }));
   return res.status(200).json({ sucesso: true, veiculos });
 }));
 
