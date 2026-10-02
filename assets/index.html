@@ -174,6 +174,32 @@
       animation: fadeSlideIn .28s cubic-bezier(.4,0,.2,1);
     }
 
+
+    /* ── Área do operador (login + painel interno) ── */
+    .op-btn { background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: 13px; padding: 10px 16px; border-radius: 10px; letter-spacing: .02em; white-space: nowrap; }
+    .op-btn:hover { background: #dbe7ff; }
+    #panelOperador { max-width: 760px; }
+    .op-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: 0 2px 16px rgba(23,92,211,.05); }
+    .op-card h2 { font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+    .op-card p.sub { color: var(--muted); font-size: 14px; margin: 4px 0 6px; }
+    .op-card input { width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; color: var(--text); background: var(--bg); }
+    .op-card input:focus { outline: none; border-color: var(--primary); background: #fff; }
+    .op-primary { width: 100%; margin-top: 18px; padding: 15px; background: var(--primary); color: #fff; font-weight: 800; font-size: 15px; border-radius: 12px; }
+    .op-primary:hover { background: var(--primary-hover); }
+    .op-primary:disabled { opacity: .6; cursor: wait; }
+    .op-err { margin-top: 14px; padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; background: var(--error-light); color: var(--error); }
+    .op-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .op-top .who { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .op-sec { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .op-chip { font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 99px; background: var(--success-light); color: #067647; }
+    .op-chip.bad { background: var(--error-light); color: var(--error); }
+    .op-table { width: 100%; border-collapse: collapse; }
+    .op-table th { text-align: left; font-size: 11px; letter-spacing: .07em; color: var(--muted); font-weight: 800; padding: 8px 10px; }
+    .op-table td { padding: 12px 10px; border-top: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+    .op-table td.placa { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: .08em; }
+    .op-empty { text-align: center; color: var(--muted); padding: 28px 0; font-size: 14px; }
+    .op-note { font-size: 12px; color: var(--muted); margin-top: 14px; }
+
     /* ── Field label ── */
     .field-label {
       display: block;
@@ -636,6 +662,8 @@
         </div>
       </div>
     </div>
+
+    <button class="op-btn" id="btnOperador" type="button">🔒 OPERADOR</button>
   </header>
 
   <!-- ═══════════════ SEGMENTED CONTROL ═══════════════ -->
@@ -922,6 +950,39 @@
       </div>
     </div>
 
+
+    <!-- ─── ÁREA DO OPERADOR ─── -->
+    <div class="panel" id="panelOperador">
+
+      <div class="op-card" id="opLogin">
+        <h2>Área do operador</h2>
+        <p class="sub">Acesso restrito à equipe do pátio.</p>
+        <label class="field-label" for="opUsuario" style="margin-top:16px">USUÁRIO</label>
+        <input id="opUsuario" autocomplete="username" autocapitalize="off" />
+        <label class="field-label" for="opSenha" style="margin-top:14px">SENHA</label>
+        <input id="opSenha" type="password" autocomplete="current-password" />
+        <div class="op-err" id="opErro" style="display:none"></div>
+        <button class="op-primary" id="opEntrar" type="button">ENTRAR</button>
+      </div>
+
+      <div class="op-card" id="opPainel" style="display:none">
+        <div class="op-top">
+          <div>
+            <h2>Veículos no pátio</h2>
+            <div class="who" id="opQuem"></div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="op-btn" id="opAtualizar" type="button">↻ ATUALIZAR</button>
+            <button class="op-btn" id="opSair" type="button">SAIR</button>
+          </div>
+        </div>
+        <div class="op-sec" id="opSeg"></div>
+        <div id="opLista"></div>
+        <p class="op-note">Por segurança, as placas aparecem mascaradas: o operador só vê os 4 últimos caracteres. A placa completa fica apenas no banco e no ticket do cliente.</p>
+      </div>
+
+    </div>
+
   </main>
 
   <!-- ═══════════════ FOOTER ═══════════════ -->
@@ -1041,6 +1102,8 @@
     positionIndicator(tab);
     $('panelEntrada').classList.toggle('active', tab === 'entrada');
     $('panelSaida').classList.toggle('active',   tab === 'saida');
+    $('panelOperador').classList.remove('active');
+    $('btnOperador').textContent = '🔒 OPERADOR';
   }
 
   $('abaEntrada').addEventListener('click', () => switchTab('entrada'));
@@ -1288,6 +1351,96 @@
     resetSaidaFlow();
     switchTab('entrada');
   });
+
+  /* ════════════════════════════════════════
+     ÁREA DO OPERADOR
+     Login confere a senha contra o hash bcrypt do banco. O token fica só
+     em memória (some ao recarregar). A lista vem com a placa mascarada.
+  ════════════════════════════════════════ */
+  let opToken = null;
+
+  function opEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function opMostrar(logado) {
+    $('opLogin').style.display  = logado ? 'none'  : 'block';
+    $('opPainel').style.display = logado ? 'block' : 'none';
+  }
+
+  function opAbrir() {
+    $('panelEntrada').classList.remove('active');
+    $('panelSaida').classList.remove('active');
+    $('panelOperador').classList.add('active');
+    $('btnOperador').textContent = '← VOLTAR AO TOTEM';
+    if (opToken) opCarregar();
+  }
+
+  function opSair() {
+    opToken = null;
+    $('opSenha').value = '';
+    opMostrar(false);
+  }
+
+  async function opApi(path, opts) {
+    const r = await fetch('/api/operador' + path, Object.assign({}, opts, {
+      headers: Object.assign({ 'Content-Type': 'application/json' }, opToken ? { Authorization: 'Bearer ' + opToken } : {}),
+    }));
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401 && opToken) { opSair(); }
+    if (!r.ok) throw new Error(j.erro || 'Erro ' + r.status);
+    return j;
+  }
+
+  async function opEntrar() {
+    const btn = $('opEntrar'); $('opErro').style.display = 'none';
+    btn.disabled = true; btn.textContent = 'ENTRANDO...';
+    try {
+      const j = await opApi('/login', { method: 'POST', body: JSON.stringify({ usuario: $('opUsuario').value.trim(), senha: $('opSenha').value }) });
+      opToken = j.token;
+      $('opQuem').textContent = 'Operador: ' + $('opUsuario').value.trim();
+      $('opSenha').value = '';
+      opMostrar(true);
+      opCarregar();
+    } catch (e) {
+      $('opErro').textContent = e.message; $('opErro').style.display = 'block';
+    } finally { btn.disabled = false; btn.textContent = 'ENTRAR'; }
+  }
+
+  async function opCarregar() {
+    try {
+      const j = await opApi('/painel');
+      $('opLista').innerHTML = j.veiculos.length
+        ? '<table class="op-table"><tr><th>TICKET</th><th>PLACA</th><th>TIPO</th><th>ENTRADA</th></tr>' +
+          j.veiculos.map((v) => '<tr><td>' + opEsc(v.ticket) + '</td><td class="placa">' + opEsc(v.placa) + '</td><td>' +
+            (v.tipo === 'moto' ? '🏍️ Moto' : '🚗 Carro') + '</td><td>' + opEsc(fmtDataHora(v.entrada)) + '</td></tr>').join('') + '</table>'
+        : '<div class="op-empty">Nenhum veículo no pátio agora.</div>';
+    } catch (e) {
+      $('opLista').innerHTML = '<div class="op-err">' + opEsc(e.message) + '</div>';
+    }
+    opCarregarSeguranca();
+  }
+
+  // Situação real da camada de dados (só aparece se o servidor responder).
+  async function opCarregarSeguranca() {
+    const chips = [];
+    try {
+      const a = await opApi('/seguranca/recurso1');
+      chips.push('<span class="op-chip' + (a.cifrada ? '' : ' bad') + '">' + (a.cifrada ? '🔐 Banco: conexão cifrada (' + opEsc(a.protocolo) + ')' : '⚠ Banco: conexão sem cifra') + '</span>');
+    } catch (e) { /* recurso opcional */ }
+    try {
+      const b = await opApi('/seguranca/recurso3');
+      chips.push('<span class="op-chip' + (b.administrador ? ' bad' : '') + '">' + (b.administrador ? '⚠ Sistema conectado como administrador' : '🛡 Sistema usa usuário restrito (' + opEsc(b.usuario) + ')') + '</span>');
+    } catch (e) { /* recurso opcional */ }
+    $('opSeg').innerHTML = chips.join('');
+  }
+
+  $('btnOperador').addEventListener('click', () => {
+    if ($('panelOperador').classList.contains('active')) switchTab(STATE.tab);
+    else opAbrir();
+  });
+  $('opEntrar').addEventListener('click', opEntrar);
+  $('opSenha').addEventListener('keydown', (e) => { if (e.key === 'Enter') opEntrar(); });
+  $('opSair').addEventListener('click', opSair);
+  $('opAtualizar').addEventListener('click', opCarregar);
 </script>
 </body>
 </html>

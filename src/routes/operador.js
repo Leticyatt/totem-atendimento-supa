@@ -37,9 +37,7 @@ router.get('/painel', exigirOperador, asyncHandler(async (req, res) => {
   return res.status(200).json({ sucesso: true, operador: req.operador, veiculos });
 }));
 
-// Demonstração dos 4 recursos (tela /seguranca). Desligue com DEMO_SEGURANCA=false.
-if (process.env.DEMO_SEGURANCA !== 'false') {
-  router.use('/seguranca', exigirOperador, demoSeguranca);
-}
+// Situação da camada de dados (faixa do painel). Partes de demonstração: DEMO_SEGURANCA=false.
+router.use('/seguranca', exigirOperador, demoSeguranca);
 
 module.exports = router;

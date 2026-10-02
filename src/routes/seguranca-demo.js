@@ -20,6 +20,12 @@ const config = require('../../config/config');
 
 const router = express.Router();
 
+// Rotas de demonstração (mostram o hash e tentam comandos proibidos): desligáveis.
+function soDemo(req, res, next) {
+  if (process.env.DEMO_SEGURANCA === 'false') return next(new ErroDeAplicacao('Recurso não encontrado.', 404));
+  return next();
+}
+
 // Recurso 1 - a conexão do back-end com o banco está cifrada (TLS)?
 router.get('/recurso1', asyncHandler(async (req, res) => {
   let host = '';
@@ -39,7 +45,7 @@ router.get('/recurso1', asyncHandler(async (req, res) => {
 }));
 
 // Recurso 2 - o que realmente está guardado no banco para o operador logado.
-router.get('/recurso2', asyncHandler(async (req, res) => {
+router.get('/recurso2', soDemo, asyncHandler(async (req, res) => {
   const op = await stmts.buscarOperadorPorUsuario.get(req.operador);
   if (!op) throw new ErroDeAplicacao('Operador não encontrado.', 404);
   // Formato bcrypt: $2b$12$<22 chars de salt><31 chars de hash>
@@ -78,7 +84,7 @@ const TENTATIVAS = {
   },
 };
 
-router.post('/recurso3/tentar', asyncHandler(async (req, res) => {
+router.post('/recurso3/tentar', soDemo, asyncHandler(async (req, res) => {
   const t = TENTATIVAS[req.body && req.body.acao];
   if (!t) throw new ErroDeAplicacao('Ação desconhecida.', 400);
 
@@ -105,7 +111,7 @@ router.post('/recurso3/tentar', asyncHandler(async (req, res) => {
 }));
 
 // Recurso 4 - dado original x dado mascarado.
-router.get('/recurso4', asyncHandler(async (req, res) => {
+router.get('/recurso4', soDemo, asyncHandler(async (req, res) => {
   const lista = (await stmts.listarVeiculosDentro.all()).slice(0, 8);
   res.json({
     sucesso: true,
