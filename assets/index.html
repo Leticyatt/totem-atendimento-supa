@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstaciTotem - Autoatendimento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:       #175CD3;
+      --primary-hover: #0E3D8C;
+      --primary-light: #EFF4FF;
+      --bg:            #F3F6FB;
+      --surface:       #FFFFFF;
+      --border:        #D1DCF0;
+      --text:          #0F1B35;
+      --muted:         #5A6A8A;
+      --success:       #12B76A;
+      --success-light: #ECFDF5;
+      --error:         #F04438;
+      --error-light:   #FEF3F2;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Manrope', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* hide scrollbar */
+    * { scrollbar-width: none; }
+    *::-webkit-scrollbar { display: none; }
+
+    button { font-family: inherit; cursor: pointer; border: none; }
+    input  { font-family: inherit; }
+
+    /* ── App shell ── */
+    #app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ────────────────────────────────
+       HEADER
+    ──────────────────────────────── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      background: var(--surface);
+      border-bottom: 1.5px solid var(--border);
+      box-shadow: 0 2px 16px rgba(23,92,211,.06);
+      flex-shrink: 0;
+    }
+
+    .logo-wrap { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: var(--primary);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(23,92,211,.32);
+      flex-shrink: 0;
+    }
+
+    .logo-text { font-size: 26px; font-weight: 900; letter-spacing: -.5px; color: var(--text); line-height: 1.1; }
+    .logo-text span { color: var(--primary); }
+    .logo-sub  { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+
+    /* Vacancy badge */
+    #vacancyBadge {
+      display: flex; align-items: stretch; gap: 4px;
+      padding: 6px;
+      border-radius: 18px;
+      background: var(--primary-light);
+      border: 1.5px solid rgba(23,92,211,.12);
+    }
+    .vacancy-group {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 16px;
+      border-radius: 14px;
+      transition: background .3s;
+    }
+    .vacancy-group.critical {
+      background: var(--error-light);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .vacancy-sep { width: 1.5px; background: var(--border); margin: 4px 0; }
+    .vacancy-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      background: var(--success); box-shadow: 0 0 0 3px rgba(18,183,106,.2);
+      transition: background .3s, box-shadow .3s;
+    }
+    .vacancy-group.critical .vacancy-dot {
+      background: var(--error); box-shadow: 0 0 0 3px rgba(240,68,56,.2);
+    }
+    .vacancy-num   { font-size: 24px; font-weight: 900; letter-spacing: -1px; line-height: 1; color: var(--primary); }
+    .vacancy-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--primary); }
+    .vacancy-group.critical .vacancy-num,
+    .vacancy-group.critical .vacancy-label { color: var(--error); }
+
+    /* ────────────────────────────────
+       SEGMENTED CONTROL
+    ──────────────────────────────── */
+    #segWrap {
+      padding: 28px 32px 0;
+      flex-shrink: 0;
+    }
+
+    #segControl {
+      position: relative;
+      display: flex;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 6px;
+      box-shadow: 0 2px 12px rgba(23,92,211,.06);
+    }
+
+    #segIndicator {
+      position: absolute;
+      top: 6px; bottom: 6px;
+      border-radius: 14px;
+      background: var(--primary);
+      box-shadow: 0 4px 16px rgba(23,92,211,.30);
+      transition: left .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .seg-btn {
+      position: relative; z-index: 1;
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 20px;
+      background: transparent;
+      border-radius: 14px;
+      font-size: 20px; font-weight: 800; letter-spacing: .04em;
+      color: var(--muted);
+      transition: color .22s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .seg-btn.active { color: #fff; }
+    .seg-btn svg { flex-shrink: 0; }
+
+    /* ────────────────────────────────
+       MAIN / PANELS
+    ──────────────────────────────── */
+    #main {
+      flex: 1;
+      padding: 24px 32px;
+      overflow-y: auto;
+    }
+
+    .panel {
+      max-width: 480px;
+      margin: 0 auto;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .panel.active {
+      display: flex;
+      animation: fadeSlideIn .28s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── Field label ── */
+    .field-label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+
+    /* ── Vehicle type grid ── */
+    #vehicleGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .veh-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px 8px;
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      transition: border-color .18s, background .18s, box-shadow .18s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .veh-btn:active { transform: scale(.96); }
+    .veh-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 4px 16px rgba(23,92,211,.12);
+    }
+    .veh-icon  { font-size: 36px; }
+    .veh-label {
+      margin-top: 8px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--muted);
+      transition: color .18s;
+    }
+    .veh-btn.selected .veh-label { color: var(--primary); }
+
+    /* ── Inputs ── */
+    .park-input {
+      width: 100%;
+      height: 72px;
+      padding: 0 24px;
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      font-size: 28px; font-weight: 800;
+      letter-spacing: .12em;
+      color: var(--text);
+      text-transform: uppercase;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .park-input::placeholder { color: var(--border); font-weight: 600; letter-spacing: .06em; }
+    .park-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(23,92,211,.12);
+    }
+    .park-input.code-input { font-size: 32px; letter-spacing: .18em; }
+
+    /* ── OR divider ── */
+    .or-divider {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .or-divider span {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+
+    /* ── Error banner ── */
+    .error-msg {
+      display: none;
+      align-items: center; gap: 12px;
+      padding: 14px 20px;
+      border-radius: 12px;
+      background: var(--error-light);
+      border: 1.5px solid rgba(240,68,56,.2);
+    }
+    .error-msg.visible { display: flex; }
+    .error-msg span { font-size: 14px; font-weight: 600; color: var(--error); }
+
+    /* ── CTA buttons ── */
+    .cta-btn {
+      width: 100%;
+      height: 80px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      border-radius: 16px;
+      font-size: 22px; font-weight: 800; letter-spacing: .06em;
+      color: #fff;
+      transition: background .18s, box-shadow .18s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+      position: relative; overflow: hidden;
+    }
+    .cta-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle, rgba(255,255,255,.22) 0%, transparent 70%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .cta-btn:active::after { opacity: 1; }
+    .cta-btn:active        { transform: scale(.98); }
+
+    .cta-btn.blue  { background: var(--primary); box-shadow: 0 8px 24px rgba(23,92,211,.36); }
+    .cta-btn.blue:hover  { background: var(--primary-hover); }
+    .cta-btn.blue:disabled  { background: var(--muted); box-shadow: none; cursor: not-allowed; transform: none; }
+
+    .cta-btn.green { background: var(--success); box-shadow: 0 8px 24px rgba(18,183,106,.36); }
+    .cta-btn.green:hover { background: #0fa05e; }
+    .cta-btn.green:disabled { background: var(--muted); box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* Ghost button */
+    .ghost-btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      background: transparent;
+      font-size: 15px; font-weight: 700; letter-spacing: .04em;
+      color: var(--muted);
+      transition: border-color .18s, color .18s;
+    }
+    .ghost-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ────────────────────────────────
+       TICKET STUB
+    ──────────────────────────────── */
+    #ticketGerado {
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+      filter: drop-shadow(0 12px 32px rgba(23,92,211,.18));
+      animation: ticketReveal .45s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    .ticket-top {
+      background: var(--primary);
+      border-radius: 24px 24px 0 0;
+      padding: 28px 32px;
+    }
+    .ticket-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .ticket-brand { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.65); }
+    .ticket-vtype {
+      padding: 4px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      font-size: 12px; font-weight: 700; color: #fff;
+    }
+    .ticket-code {
+      text-align: center;
+      font-size: 52px; font-weight: 900;
+      letter-spacing: .18em;
+      color: #fff; line-height: 1;
+    }
+    .ticket-code-label {
+      text-align: center;
+      margin-top: 6px;
+      font-size: 12px; color: rgba(255,255,255,.55); font-weight: 500;
+    }
+
+    /* Perforated tear line */
+    .ticket-perf {
+      position: relative;
+      height: 24px;
+      background: var(--bg);
+      display: flex; align-items: center;
+    }
+    .ticket-perf::before, .ticket-perf::after {
+      content: '';
+      position: absolute;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--bg);
+      top: 0;
+    }
+    .ticket-perf::before { left: -12px; }
+    .ticket-perf::after  { right: -12px; }
+    .ticket-dash {
+      flex: 1;
+      margin: 0 8px;
+      border-top: 2px dashed var(--border);
+    }
+
+    .ticket-bottom {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 24px 24px;
+      padding: 24px 32px;
+    }
+    .ticket-info-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .ticket-info-right { text-align: right; }
+    .info-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); margin-bottom: 3px; }
+    .info-val   { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: .06em; }
+    .info-sub   { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    .ticket-qr {
+      display: flex; justify-content: center;
+      margin: 20px 0 12px;
+    }
+    .qr-box {
+      width: 80px; height: 80px;
+      border-radius: 12px;
+      background: var(--primary-light);
+      border: 1.5px solid rgba(23,92,211,.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ticket-note { text-align: center; font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    /* ── Success badge ── */
+    .success-badge {
+      display: flex; align-items: center; gap: 8px;
+      align-self: center;
+      padding: 10px 20px;
+      border-radius: 99px;
+      background: var(--success-light);
+      border: 1.5px solid rgba(18,183,106,.2);
+      font-size: 13px; font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--success);
+    }
+
+    /* ────────────────────────────────
+       SAÍDA — PRICE HERO
+    ──────────────────────────────── */
+    #priceHero {
+      border-radius: 24px;
+      padding: 32px;
+      background: var(--primary);
+      box-shadow: 0 12px 40px rgba(23,92,211,.28);
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .price-label { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: rgba(255,255,255,.65); margin-bottom: 8px; }
+    #priceValue  {
+      font-size: 72px; font-weight: 900; color: #fff;
+      line-height: 1; letter-spacing: -2px;
+      animation: pricePop .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .price-duration {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px;
+      font-size: 14px; color: rgba(255,255,255,.75); font-weight: 600;
+    }
+
+    /* ── Details glass card ── */
+    .glass-card {
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(209,220,240,.6);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .detail-row     { display: flex; align-items: center; justify-content: space-between; }
+    .detail-key     { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+    .detail-val     { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: .06em; }
+    .detail-val.sm  { font-size: 14px; }
+    .detail-divider { height: 1px; background: var(--border); }
+
+    /* ── Payment methods ── */
+    .pay-methods-title {
+      text-align: center;
+      font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .pay-methods-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+    }
+    .pay-method {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 14px 8px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+    }
+    .pay-method .m-icon  { font-size: 24px; }
+    .pay-method .m-label { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+
+    /* ── Payment confirmed ── */
+    #paidScreen {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+      animation: ticketReveal .45s cubic-bezier(.34,1.56,.64,1);
+    }
+    .paid-card {
+      width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 32px;
+      border-radius: 24px;
+      background: var(--success-light);
+      border: 2px solid rgba(18,183,106,.22);
+      box-shadow: 0 8px 32px rgba(18,183,106,.12);
+    }
+    .paid-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--success);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(18,183,106,.36);
+      margin-bottom: 20px;
+    }
+    .paid-title {
+      font-size: 30px; font-weight: 900; color: var(--success);
+      letter-spacing: -.5px; line-height: 1.1; text-align: center;
+    }
+    .paid-sub { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--success); opacity: .75; }
+    .paid-amount {
+      margin-top: 16px;
+      padding: 10px 24px;
+      border-radius: 10px;
+      background: rgba(18,183,106,.12);
+      font-size: 14px; font-weight: 700; color: var(--success);
+    }
+    .paid-msg {
+      width: 100%;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      font-size: 14px; color: var(--muted); font-weight: 600;
+    }
+
+    /* ── Info hint ── */
+    .info-hint {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding-bottom: 4px;
+    }
+    .info-hint span { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    /* ── Rates bar ── */
+    .rates-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(209,220,240,.6);
+    }
+    .rates-bar .r-title  { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .rates-bar .r-values { display: flex; gap: 16px; }
+    .rates-bar .r-val    { font-size: 12px; font-weight: 700; color: var(--text); }
+
+    /* ────────────────────────────────
+       FOOTER
+    ──────────────────────────────── */
+    #footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: var(--surface);
+      border-top: 1.5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .footer-hint   { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+    .footer-status { display: flex; align-items: center; gap: 8px; }
+    .status-dot    { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+    .footer-status span { font-size: 11px; font-weight: 700; color: var(--success); letter-spacing: .06em; }
+    #footerTime    { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* ────────────────────────────────
+       KEYFRAMES
+    ──────────────────────────────── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes ticketReveal {
+      from { opacity: 0; transform: scale(.88) translateY(20px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+    @keyframes pricePop {
+      from { opacity: 0; transform: scale(.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .6; }
+    }
+
+    /* ────────────────────────────────
+       RESPONSIVE
+    ──────────────────────────────── */
+    @media (max-width: 520px) {
+      #header  { padding: 14px 18px; }
+      #segWrap { padding: 16px 18px 0; }
+      #main    { padding: 18px; }
+      #footer  { padding: 12px 18px; }
+      .logo-text   { font-size: 22px; }
+      .seg-btn     { font-size: 17px; padding: 16px 8px; }
+      .cta-btn     { height: 68px; font-size: 18px; }
+      #priceValue  { font-size: 56px; }
+      .ticket-code { font-size: 40px; }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header id="header">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <rect x="3" y="6" width="20" height="14" rx="3" stroke="white" stroke-width="2.2"/>
+          <circle cx="8" cy="17" r="2" fill="white"/>
+          <circle cx="18" cy="17" r="2" fill="white"/>
+          <path d="M3 11h20" stroke="white" stroke-width="2"/>
+          <path d="M8 11L10 7h6l2 4" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">ESTACI<span>Totem</span></div>
+        <div class="logo-sub">AUTOATENDIMENTO</div>
+      </div>
+    </div>
+
+    <div id="vacancyBadge">
+      <div class="vacancy-group" id="vacancyGroupCarro">
+        <div class="vacancy-dot"></div>
+        <div>
+          <div class="vacancy-num" id="vacancyNumCarro">--</div>
+          <div class="vacancy-label">🚗 VAGAS CARRO</div>
+        </div>
+      </div>
+      <div class="vacancy-sep"></div>
+      <div class="vacancy-group" id="vacancyGroupMoto">
+        <div class="vacancy-dot"></div>
+        <div>
+          <div class="vacancy-num" id="vacancyNumMoto">--</div>
+          <div class="vacancy-label">🏍️ VAGAS MOTO</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ SEGMENTED CONTROL ═══════════════ -->
+  <div id="segWrap">
+    <div id="segControl">
+      <div id="segIndicator"></div>
+
+      <button class="seg-btn active" id="abaEntrada" data-tab="entrada">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+          <path d="M11 3L19 11L11 19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 11H19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        ENTRADA
+      </button>
+
+      <button class="seg-btn" id="abaSaida" data-tab="saida">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+          <path d="M11 3L3 11L11 19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M19 11H3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        SAÍDA
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main id="main">
+
+    <!-- ─── PAINEL ENTRADA ─── -->
+    <div class="panel active" id="panelEntrada">
+
+      <!-- Step 1: Formulário -->
+      <div id="entradaForm" style="display:flex; flex-direction:column; gap:20px;">
+
+        <div>
+          <label class="field-label">TIPO DE VEÍCULO</label>
+          <div id="vehicleGrid">
+            <button class="veh-btn" data-type="carro">
+              <span class="veh-icon">🚗</span>
+              <span class="veh-label">CARRO</span>
+            </button>
+            <button class="veh-btn" data-type="moto">
+              <span class="veh-icon">🏍️</span>
+              <span class="veh-label">MOTO</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="inputPlaca">PLACA DO VEÍCULO</label>
+          <input class="park-input" id="inputPlaca" type="text"
+                 placeholder="ABC-1234" maxlength="8" autocomplete="off" />
+        </div>
+
+        <div class="error-msg" id="entradaError">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0">
+            <circle cx="10" cy="10" r="9" stroke="var(--error)" stroke-width="1.8"/>
+            <path d="M10 6v5" stroke="var(--error)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="10" cy="14.5" r="1" fill="var(--error)"/>
+          </svg>
+          <span id="entradaErrorMsg"></span>
+        </div>
+
+        <button class="cta-btn blue" id="btnEntrada">
+          <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+            <rect x="4" y="8" width="18" height="12" rx="2.5" stroke="white" stroke-width="2.2"/>
+            <path d="M8 8V6a5 5 0 0 1 10 0v2" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M13 14v2M10 14h6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          GERAR TICKET
+        </button>
+
+        <div class="info-hint">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="var(--muted)" stroke-width="1.4"/>
+            <path d="M8 7v5" stroke="var(--muted)" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="8" cy="5" r=".8" fill="var(--muted)"/>
+          </svg>
+          <span>Guarde o código do ticket para retirada do veículo</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Ticket gerado -->
+      <div id="entradaTicket" style="display:none; flex-direction:column; align-items:center; gap:20px;">
+
+        <div class="success-badge">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="8" fill="var(--success)"/>
+            <path d="M5.5 9l2.5 2.5 5-5" stroke="white" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          TICKET GERADO COM SUCESSO
+        </div>
+
+        <div id="ticketGerado">
+          <div class="ticket-top">
+            <div class="ticket-header-row">
+              <span class="ticket-brand">ESTACITOTEM</span>
+              <span class="ticket-vtype" id="ticketVtype"></span>
+            </div>
+            <div class="ticket-code" id="ticketCode"></div>
+            <div class="ticket-code-label">CÓDIGO DO TICKET</div>
+          </div>
+
+          <div class="ticket-perf"><div class="ticket-dash"></div></div>
+
+          <div class="ticket-bottom">
+            <div class="ticket-info-row">
+              <div>
+                <div class="info-label">PLACA</div>
+                <div class="info-val" id="ticketPlate"></div>
+              </div>
+              <div class="ticket-info-right">
+                <div class="info-label">ENTRADA</div>
+                <div class="info-val" id="ticketTime"></div>
+                <div class="info-sub" id="ticketDate"></div>
+              </div>
+            </div>
+
+            <div class="ticket-qr">
+              <div class="qr-box">
+                <!-- QR placeholder SVG -->
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <rect x="4"  y="4"  width="16" height="16" rx="2" stroke="var(--primary)" stroke-width="2.5" fill="none"/>
+                  <rect x="8"  y="8"  width="8"  height="8"  fill="var(--primary)" rx="1"/>
+                  <rect x="28" y="4"  width="16" height="16" rx="2" stroke="var(--primary)" stroke-width="2.5" fill="none"/>
+                  <rect x="32" y="8"  width="8"  height="8"  fill="var(--primary)" rx="1"/>
+                  <rect x="4"  y="28" width="16" height="16" rx="2" stroke="var(--primary)" stroke-width="2.5" fill="none"/>
+                  <rect x="8"  y="32" width="8"  height="8"  fill="var(--primary)" rx="1"/>
+                  <rect x="28" y="28" width="4"  height="4"  fill="var(--primary)"/>
+                  <rect x="36" y="28" width="4"  height="4"  fill="var(--primary)"/>
+                  <rect x="32" y="32" width="4"  height="4"  fill="var(--primary)"/>
+                  <rect x="40" y="36" width="4"  height="8"  fill="var(--primary)"/>
+                  <rect x="28" y="36" width="4"  height="4"  fill="var(--primary)"/>
+                  <rect x="28" y="44" width="8"  height="4"  fill="var(--primary)"/>
+                </svg>
+              </div>
+            </div>
+            <p class="ticket-note">Apresente este código na saída</p>
+          </div>
+        </div>
+
+        <button class="ghost-btn" id="btnNovoTicket">← NOVO TICKET</button>
+      </div>
+    </div>
+
+    <!-- ─── PAINEL SAÍDA ─── -->
+    <div class="panel" id="panelSaida">
+
+      <!-- Step 1: Formulário -->
+      <div id="saidaForm" style="display:flex; flex-direction:column; gap:20px;">
+
+        <div>
+          <label class="field-label" for="ticketSaida">CÓDIGO DO TICKET</label>
+          <input class="park-input code-input" id="ticketSaida" type="text"
+                 placeholder="AB1234" maxlength="6" autocomplete="off" />
+        </div>
+
+        <div class="or-divider"><span>OU</span></div>
+
+        <div>
+          <label class="field-label" for="placaSaida">PLACA DO VEÍCULO</label>
+          <input class="park-input" id="placaSaida" type="text"
+                 placeholder="ABC-1234" maxlength="8" autocomplete="off" />
+        </div>
+
+        <div class="error-msg" id="saidaError">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0">
+            <circle cx="10" cy="10" r="9" stroke="var(--error)" stroke-width="1.8"/>
+            <path d="M10 6v5" stroke="var(--error)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="10" cy="14.5" r="1" fill="var(--error)"/>
+          </svg>
+          <span id="saidaErrorMsg"></span>
+        </div>
+
+        <button class="cta-btn blue" id="btnSaida">
+          <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+            <rect x="4" y="4" width="18" height="18" rx="3" stroke="white" stroke-width="2.2"/>
+            <path d="M9 13h8M13 9v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          CALCULAR E PAGAR
+        </button>
+
+        <div class="rates-bar">
+          <span class="r-title">Tabela de preços</span>
+          <div class="r-values">
+            <span class="r-val" id="rateCarro">🚗 Carro: --</span>
+            <span class="r-val" id="rateMoto">🏍️ Moto: --</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mantido oculto caso precise depois, mas agora a saída pula essa etapa visualmente para combinar com o backend -->
+      <div id="saidaPayment" style="display:none; flex-direction:column; gap:20px;"></div>
+
+      <!-- Step 3 (Agora Step 2): Pagamento confirmado -->
+      <div id="paidScreen" style="display:none;">
+        <div class="paid-card">
+          <div class="paid-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <path d="M10 20l7 7 13-14" stroke="white" stroke-width="3.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="paid-title">PAGAMENTO<br>CONFIRMADO!</div>
+          <div class="paid-sub">Obrigado por usar o EstaciTotem</div>
+          <div class="paid-amount" id="paidAmount"></div>
+        </div>
+        <div class="paid-msg">Você pode sair com o seu veículo. Boa viagem! 🚗</div>
+
+        <button class="cta-btn blue" id="btnImprimirNota">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9V3h12v6" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+            <rect x="4" y="9" width="16" height="8" rx="2" stroke="white" stroke-width="2"/>
+            <rect x="7" y="14" width="10" height="7" fill="white"/>
+          </svg>
+          IMPRIMIR NOTA
+        </button>
+        <button class="ghost-btn" id="btnNovaOperacao">← NOVA OPERAÇÃO</button>
+      </div>
+
+      <!-- Step 3: Nota fiscal -->
+      <div id="reciboScreen" style="display:none; flex-direction:column; align-items:center; gap:20px;">
+
+        <div class="success-badge">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="8" fill="var(--success)"/>
+            <path d="M5.5 9l2.5 2.5 5-5" stroke="white" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          NOTA EMITIDA COM SUCESSO
+        </div>
+
+        <div id="notaFiscal" style="width:100%; max-width:380px; filter:drop-shadow(0 12px 32px rgba(23,92,211,.18));">
+          <div class="ticket-top">
+            <div class="ticket-header-row">
+              <span class="ticket-brand">ESTACITOTEM</span>
+              <span class="ticket-vtype" id="notaVtype"></span>
+            </div>
+            <div class="ticket-code" id="notaTicket" style="font-size:30px;"></div>
+            <div class="ticket-code-label">NOTA FISCAL · CÓDIGO DO TICKET</div>
+          </div>
+
+          <div class="ticket-perf"><div class="ticket-dash"></div></div>
+
+          <div class="ticket-bottom">
+            <div class="glass-card" style="background:transparent; backdrop-filter:none; border:none; padding:0;">
+              <div class="detail-row">
+                <span class="detail-key">PLACA</span>
+                <span class="detail-val" id="notaPlaca"></span>
+              </div>
+              <div class="detail-divider"></div>
+              <div class="detail-row">
+                <span class="detail-key">ENTRADA</span>
+                <span class="detail-val sm" id="notaEntrada"></span>
+              </div>
+              <div class="detail-divider"></div>
+              <div class="detail-row">
+                <span class="detail-key">SAÍDA</span>
+                <span class="detail-val sm" id="notaSaida"></span>
+              </div>
+              <div class="detail-divider"></div>
+              <div class="detail-row">
+                <span class="detail-key">TEMPO PERMANÊNCIA</span>
+                <span class="detail-val sm" id="notaTempo"></span>
+              </div>
+              <div class="detail-divider"></div>
+              <div class="detail-row">
+                <span class="detail-key">VALOR PAGO</span>
+                <span class="detail-val" id="notaValor"></span>
+              </div>
+            </div>
+            <p class="ticket-note" style="margin-top:16px;">Comprovante interno do totem — sem valor fiscal</p>
+          </div>
+        </div>
+
+        <button class="cta-btn blue" id="btnInicio">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M4 12L12 4l8 8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 10v10h12V10" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+          INÍCIO
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer id="footer">
+    <span class="footer-hint">Em caso de dúvidas, acione o suporte</span>
+    <div class="footer-status">
+      <div class="status-dot"></div>
+      <span>SISTEMA ONLINE</span>
+    </div>
+    <span id="footerTime"></span>
+  </footer>
+
+</div><!-- /#app -->
+
+<script>
+  /* ════════════════════════════════════════
+     UTILITÁRIOS
+  ════════════════════════════════════════ */
+  const $  = (id)  => document.getElementById(id);
+  const $$ = (sel, ctx) => (ctx || document).querySelectorAll(sel);
+
+  const fmtTime  = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const fmtDate  = (d) => d.toLocaleDateString('pt-BR',  { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const fmtMoney = (n) => 'R$ ' + Number(n).toFixed(2).replace('.', ',');
+
+  /* ════════════════════════════════════════
+     ESTADO GLOBAL
+  ════════════════════════════════════════ */
+  const STATE = {
+    tab:          'entrada',
+    vehicleType:  '',
+    pendingAmount: 0,
+    vagas:        null, // { carro: {totais,ocupadas,livres}, moto: {...} }
+    tarifas:      null,
+    lastSaida:    null, // guarda o resumo da última saída p/ montar a nota fiscal
+  };
+
+  /* ════════════════════════════════════════
+     BADGE DE VAGAS (dado real vindo do backend,
+     nunca um contador fictício no front)
+  ════════════════════════════════════════ */
+  function renderVacancy() {
+    if (!STATE.vagas) return;
+    renderVacancyGroup('vacancyGroupCarro', 'vacancyNumCarro', STATE.vagas.carro);
+    renderVacancyGroup('vacancyGroupMoto',  'vacancyNumMoto',  STATE.vagas.moto);
+  }
+
+  function renderVacancyGroup(groupId, numId, info) {
+    if (!info) return;
+    const critical = info.livres <= Math.ceil(info.totais * 0.2);
+    $(groupId).classList.toggle('critical', critical);
+    $(numId).textContent = info.livres;
+  }
+
+  async function refreshVagas() {
+    try {
+      const r = await fetch('/api/vagas');
+      const data = await r.json();
+      if (data.sucesso) {
+        STATE.vagas = data.vagas; // { carro: {totais,ocupadas,livres}, moto: {...} }
+        renderVacancy();
+      }
+    } catch (e) {
+      // Mantém o último valor conhecido na tela; não trava o totem
+      // por instabilidade momentânea de rede.
+    }
+  }
+  refreshVagas();
+  setInterval(refreshVagas, 15000); // mantém o painel sincronizado com o pátio real
+
+  /* ════════════════════════════════════════
+     TABELA DE TARIFAS (dado real vindo do backend)
+  ════════════════════════════════════════ */
+  async function refreshTarifas() {
+    try {
+      const r = await fetch('/api/tarifas');
+      const data = await r.json();
+      if (data.sucesso) {
+        STATE.tarifas = data.tarifas;
+        $('rateCarro').textContent = '🚗 Carro: ' + fmtMoney(STATE.tarifas.carro);
+        $('rateMoto').textContent  = '🏍️ Moto: '  + fmtMoney(STATE.tarifas.moto);
+      }
+    } catch (e) {
+      // silencioso: mantém o placeholder "--" se a API não responder
+    }
+  }
+  refreshTarifas();
+
+  /* ════════════════════════════════════════
+     RELÓGIO NO RODAPÉ
+  ════════════════════════════════════════ */
+  function tickClock() {
+    $('footerTime').textContent = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+  tickClock();
+  setInterval(tickClock, 30000);
+
+  /* ════════════════════════════════════════
+     SEGMENTED CONTROL
+  ════════════════════════════════════════ */
+  function positionIndicator(tab) {
+    const ctrl    = $('segControl');
+    const btn     = $(tab === 'entrada' ? 'abaEntrada' : 'abaSaida');
+    const ctrlBox = ctrl.getBoundingClientRect();
+    const btnBox  = btn.getBoundingClientRect();
+    const ind     = $('segIndicator');
+    ind.style.left  = (btnBox.left - ctrlBox.left + 6) + 'px';
+    ind.style.width = (btnBox.width - 12) + 'px';
+  }
+
+  function switchTab(tab) {
+    STATE.tab = tab;
+    $$('.seg-btn').forEach((b) => b.classList.remove('active'));
+    $(tab === 'entrada' ? 'abaEntrada' : 'abaSaida').classList.add('active');
+    positionIndicator(tab);
+    $('panelEntrada').classList.toggle('active', tab === 'entrada');
+    $('panelSaida').classList.toggle('active',   tab === 'saida');
+  }
+
+  $('abaEntrada').addEventListener('click', () => switchTab('entrada'));
+  $('abaSaida').addEventListener('click',   () => switchTab('saida'));
+  requestAnimationFrame(() => positionIndicator('entrada'));
+
+  /* ════════════════════════════════════════
+     HELPERS DE ERRO / LOADING
+  ════════════════════════════════════════ */
+  function showError(bannerEl, msgEl, msg) {
+    msgEl.textContent = msg;
+    bannerEl.classList.add('visible');
+  }
+  function hideError(bannerEl) {
+    bannerEl.classList.remove('visible');
+  }
+
+  /* Substitui conteúdo do botão por spinner + texto ou ícone + label */
+  function setBtnLoading(btn, loading, iconHTML, label) {
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<div class="spinner"></div> PROCESSANDO...'
+      : iconHTML + label;
+  }
+
+  /* ════════════════════════════════════════
+     ─── ENTRADA ───
+  ════════════════════════════════════════ */
+  const VTYPE_LABEL = { carro: '🚗 CARRO', moto: '🏍️ MOTO' };
+
+  /* Seletor de tipo de veículo */
+  $$('.veh-btn', $('vehicleGrid')).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      $$('.veh-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      STATE.vehicleType = btn.dataset.type;
+    });
+  });
+
+  /* Placa: só maiúsculo */
+  $('inputPlaca').addEventListener('input', function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+  });
+
+  const ENTRY_ICON = `
+    <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+      <rect x="4" y="8" width="18" height="12" rx="2.5" stroke="white" stroke-width="2.2"/>
+      <path d="M8 8V6a5 5 0 0 1 10 0v2" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M13 14v2M10 14h6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>`;
+
+  $('btnEntrada').addEventListener('click', () => {
+    hideError($('entradaError'));
+
+    if (!STATE.vehicleType) {
+      showError($('entradaError'), $('entradaErrorMsg'), 'Selecione o tipo de veículo.');
+      return;
+    }
+    const raw = $('inputPlaca').value.replace(/[^A-Z0-9]/g, '');
+    if (raw.length < 7) {
+      showError($('entradaError'), $('entradaErrorMsg'), 'Digite uma placa válida (ex: ABC1234 ou ABC1D23).');
+      return;
+    }
+
+    setBtnLoading($('btnEntrada'), true);
+
+    /* ── INTEGRAÇÃO REAL DA ENTRADA ── */
+    fetch('/api/entrada', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placa: raw, tipo: STATE.vehicleType })
+    })
+    .then(async (r) => {
+      const data = await r.json();
+      if (!r.ok || !data.sucesso) throw new Error(data.erro || 'Erro ao gerar ticket');
+      return data;
+    })
+    .then((data) => {
+      // Lê a resposta do backend: { sucesso: true, ticket: { ticket (código), placa... } }
+      renderTicket(data.ticket.ticket || data.ticket.codigo, data.ticket.placa || '');
+    })
+    .catch((err) => {
+      showError($('entradaError'), $('entradaErrorMsg'), err.message || 'Erro de comunicação com o servidor.');
+    })
+    .finally(() => {
+      setBtnLoading($('btnEntrada'), false, ENTRY_ICON, ' GERAR TICKET');
+    });
+  });
+
+  function renderTicket(code, plate) {
+    const now = new Date();
+    $('ticketCode').textContent  = code;
+    $('ticketVtype').textContent = VTYPE_LABEL[STATE.vehicleType] || '';
+    $('ticketPlate').textContent = plate;
+    $('ticketTime').textContent  = fmtTime(now);
+    $('ticketDate').textContent  = fmtDate(now);
+
+    $('entradaForm').style.display   = 'none';
+    $('entradaTicket').style.display = 'flex';
+
+    // Sincroniza o badge de vagas com o valor real do backend
+    // (evita "vagas fictícias" fora de sincronia com o pátio).
+    refreshVagas();
+  }
+
+  $('btnNovoTicket').addEventListener('click', () => {
+    $('entradaTicket').style.display = 'none';
+    $('entradaForm').style.display   = 'flex';
+    $('inputPlaca').value = '';
+    $$('.veh-btn').forEach((b) => b.classList.remove('selected'));
+    STATE.vehicleType = '';
+    hideError($('entradaError'));
+  });
+
+  /* ════════════════════════════════════════
+     ─── SAÍDA ───
+  ════════════════════════════════════════ */
+  $('ticketSaida').addEventListener('input', function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  });
+  $('placaSaida').addEventListener('input', function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
+  });
+
+  const CALC_ICON = `
+    <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+      <rect x="4" y="4" width="18" height="18" rx="3" stroke="white" stroke-width="2.2"/>
+      <path d="M9 13h8M13 9v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>`;
+
+  $('btnSaida').addEventListener('click', () => {
+    hideError($('saidaError'));
+
+    const code  = $('ticketSaida').value.trim();
+    const plate = $('placaSaida').value.replace(/[^A-Z0-9]/g, '');
+
+    if (!code && plate.length < 7) {
+      showError($('saidaError'), $('saidaErrorMsg'), 'Informe o código do ticket ou a placa do veículo.');
+      return;
+    }
+
+    const btn = $('btnSaida');
+    setBtnLoading(btn, true);
+
+    // IMPORTANTE: o backend (src/routes/estacionamento.js) espera as
+    // chaves "ticket" e "placa" no corpo da requisição — não "codigo".
+    // Enviar "codigo" fazia o servidor nunca reconhecer o ticket digitado
+    // e cair sempre na busca por placa (ou dar erro de validação).
+    const body = {};
+    if (code) body.ticket = code;
+    if (plate.length >= 7) body.placa = plate;
+
+    /* ── INTEGRAÇÃO REAL DA SAÍDA E PAGAMENTO EM 1 PASSO ── */
+    fetch('/api/saida', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    .then(async (r) => {
+      const data = await r.json();
+      if (!r.ok || !data.sucesso) throw new Error(data.erro || 'Erro ao processar saída');
+      return data;
+    })
+    .then((data) => {
+      // O backend devolve o valor dentro de "resumo.valor" (não em
+      // "data.valor" nem "data.ticket.valor" — por isso o totem sempre
+      // mostrava R$ 0,00 antes desse ajuste).
+      const resumo = data.resumo || {};
+      STATE.lastSaida = resumo;
+      STATE.pendingAmount = Number(resumo.valor) || 0;
+      renderPaid();
+    })
+    .catch((err) => {
+      showError($('saidaError'), $('saidaErrorMsg'), err.message || 'Erro de comunicação com o servidor.');
+    })
+    .finally(() => {
+      setBtnLoading(btn, false, CALC_ICON, ' CALCULAR E PAGAR');
+    });
+  });
+
+  function renderPaid() {
+    $('paidAmount').textContent     = 'Valor pago: ' + fmtMoney(STATE.pendingAmount);
+    // Pula direto do form inicial para a tela de pago
+    $('saidaForm').style.display    = 'none';
+    $('reciboScreen').style.display = 'none';
+    $('paidScreen').style.display   = 'flex';
+
+    // Sincroniza o badge de vagas com o valor real do backend
+    // (a vaga liberada já está refletida em /api/vagas).
+    refreshVagas();
+  }
+
+  $('btnNovaOperacao').addEventListener('click', resetSaidaFlow);
+
+  /* ════════════════════════════════════════
+     ─── NOTA FISCAL ───
+  ════════════════════════════════════════ */
+  const VTYPE_LABEL_NOTA = { carro: '🚗 CARRO', moto: '🏍️ MOTO' };
+
+  function fmtDataHora(strSql) {
+    // vem do Postgres como data ISO (ex.: "2026-10-01T22:10:00.000Z")
+    if (!strSql) return '--';
+    const d = new Date(strSql.replace(' ', 'T'));
+    if (isNaN(d.getTime())) return strSql;
+    return fmtDate(d) + ' ' + fmtTime(d);
+  }
+
+  function fmtTempo(minutos) {
+    if (minutos === undefined || minutos === null) return '--';
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  }
+
+  $('btnImprimirNota').addEventListener('click', () => {
+    const s = STATE.lastSaida || {};
+    $('notaTicket').textContent = s.ticket || '--';
+    $('notaVtype').textContent  = VTYPE_LABEL_NOTA[s.tipo] || (s.tipo || '').toUpperCase();
+    $('notaPlaca').textContent  = s.placa || '--';
+    $('notaEntrada').textContent = fmtDataHora(s.entrada);
+    $('notaSaida').textContent   = fmtDataHora(s.saida);
+    $('notaTempo').textContent   = fmtTempo(s.minutosPermanencia);
+    $('notaValor').textContent   = fmtMoney(s.valor || 0);
+
+    $('paidScreen').style.display   = 'none';
+    $('reciboScreen').style.display = 'flex';
+
+    // Abre a caixa de diálogo de impressão do navegador, já com a nota
+    // fiscal em tela (o totem real chamaria a impressora térmica aqui).
+    setTimeout(() => window.print(), 150);
+  });
+
+  function resetSaidaFlow() {
+    $('paidScreen').style.display   = 'none';
+    $('reciboScreen').style.display = 'none';
+    $('saidaForm').style.display    = 'flex';
+    $('ticketSaida').value = '';
+    $('placaSaida').value  = '';
+    hideError($('saidaError'));
+    STATE.lastSaida = null;
+    refreshVagas();
+  }
+
+  $('btnInicio').addEventListener('click', () => {
+    resetSaidaFlow();
+    switchTab('entrada');
+  });
+</script>
+</body>
+</html>

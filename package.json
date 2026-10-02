@@ -1,0 +1,24 @@
+{
+  "name": "totem-atendimento",
+  "version": "1.0.0",
+  "description": "Totem de senhas para atendimento ao consumidor - projeto de Seguranca de Sistemas da Informacao (PostgreSQL/Supabase)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "db:setup": "node scripts/setup-db.js",
+    "operador:criar": "node src/seguranca/criar-operador.js",
+    "demo:seguranca": "node scripts/demo-seguranca.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.5",
+    "express": "^4.19.2",
+    "pg": "^8.13.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
